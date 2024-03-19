@@ -12,6 +12,7 @@ class HelloController extends AbstractController
     #[Route('/hello/{name?World}', name: 'app_hello', requirements: ['name' => '(?:\pL|[- ])+'])]
     public function index(string $name, #[Autowire('%app.version%')] string $sfVersion): Response
     {
+        dump($sfVersion);
         return $this->render('hello/index.html.twig', [
             'controller_name' => $name,
         ]);
