@@ -7,6 +7,8 @@ use App\Entity\User;
 use App\Form\MovieType;
 use App\Movie\Search\Consumer\OmdbApiConsumer;
 use App\Movie\Search\Enum\SearchType;
+use App\Movie\Search\Transformer\OmdbGenreTransformer;
+use App\Movie\Search\Transformer\OmdbMovieTransformer;
 use App\Repository\MovieRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Pagerfanta\Doctrine\ORM\QueryAdapter;
@@ -43,9 +45,14 @@ class MovieController extends AbstractController
     }
 
     #[Route('/omdb/{title}', name: 'app_movie_omdb', methods: ['GET'])]
-    public function omdb(string $title, OmdbApiConsumer $consumer): Response
+    public function omdb(string $title, OmdbApiConsumer $consumer, OmdbMovieTransformer $movieTransformer, OmdbGenreTransformer $genreTransformer): Response
     {
-        dd($consumer->fetchMovieData(SearchType::Title, $title));
+        $data = $consumer->fetchMovieData(SearchType::Title, $title);
+        $movie = $movieTransformer->transform($data);
+
+        foreach (explode(', ', $data['Genre']) as $name) {
+            $movie->addGenre($genreTransformer->transform($name));
+        }
 
         return $this->render('movie/show.html.twig', [
             'movie' => $movie,
