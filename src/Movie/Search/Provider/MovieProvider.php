@@ -7,10 +7,13 @@ use App\Movie\Search\Consumer\OmdbApiConsumer;
 use App\Movie\Search\Enum\SearchType;
 use App\Movie\Search\Transformer\OmdbMovieTransformer;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class MovieProvider
 {
+    protected ?SymfonyStyle $io = null;
+
     public function __construct(
         protected readonly EntityManagerInterface $manager,
         protected readonly OmdbApiConsumer $consumer,
@@ -25,10 +28,13 @@ class MovieProvider
         $movie = $this->manager->getRepository(Movie::class)->findLikeOmdb($type, $value);
 
         if ($movie instanceof Movie) {
+            $this->io?->note('Movie already in database!');
+
             return $movie;
         }
 
         try {
+            $this->io?->text('Searching on OMDb');
             $data = $this->consumer->fetchMovieData($type, $value);
         } catch (NotFoundHttpException) {
             return null;
@@ -41,7 +47,13 @@ class MovieProvider
 
         $this->manager->persist($movie);
         $this->manager->flush();
+        $this->io?->note('Movie saved in Db!');
 
         return $movie;
+    }
+
+    public function setIo(?SymfonyStyle $io): void
+    {
+        $this->io = $io;
     }
 }
