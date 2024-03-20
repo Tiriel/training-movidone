@@ -1,9 +1,11 @@
 <?php
 
-namespace App\Security;
+namespace App\Security\Voter;
 
 use App\Entity\Movie;
 use App\Entity\User;
+use App\Movie\Event\MovieUnderageEvent;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
@@ -13,7 +15,10 @@ class MovieVoter extends Voter
     public const UNDERAGE = 'movie.is_underage';
     public const CREATOR = 'movie.is_creator';
 
-    public function __construct(protected readonly AuthorizationCheckerInterface $checker)
+    public function __construct(
+        protected readonly AuthorizationCheckerInterface $checker,
+        protected readonly EventDispatcherInterface $dispatcher,
+    )
     {
     }
 
@@ -42,12 +47,18 @@ class MovieVoter extends Voter
 
     private function checkAge(Movie $movie, User $user): bool
     {
-        return match ($movie->getRated()) {
+        $vote =  match ($movie->getRated()) {
             'G' => true,
             'PG', 'PG-13' => $user->getAge() && $user->getAge() >= 13,
             'R', 'NC-17' => $user->getAge() && $user->getAge() >= 17,
             default => false,
         };
+
+        if (false === $vote) {
+            $this->dispatcher->dispatch(new MovieUnderageEvent($movie, $user));
+        }
+
+        return $vote;
     }
 
     private function checkIsCreator(Movie $movie, User $user): bool

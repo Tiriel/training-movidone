@@ -7,7 +7,7 @@ use App\Entity\User;
 use App\Movie\Search\Consumer\OmdbApiConsumer;
 use App\Movie\Search\Enum\SearchType;
 use App\Movie\Search\Transformer\OmdbMovieTransformer;
-use App\Security\MovieVoter;
+use App\Security\Voter\MovieVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Console\Style\SymfonyStyle;

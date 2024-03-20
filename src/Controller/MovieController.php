@@ -8,7 +8,7 @@ use App\Form\MovieType;
 use App\Movie\Search\Enum\SearchType;
 use App\Movie\Search\Provider\MovieProvider;
 use App\Repository\MovieRepository;
-use App\Security\MovieVoter;
+use App\Security\Voter\MovieVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Pagerfanta\Doctrine\ORM\QueryAdapter;
 use Pagerfanta\Pagerfanta;
