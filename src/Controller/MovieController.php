@@ -8,13 +8,16 @@ use App\Form\MovieType;
 use App\Movie\Search\Enum\SearchType;
 use App\Movie\Search\Provider\MovieProvider;
 use App\Repository\MovieRepository;
+use App\Security\MovieVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Pagerfanta\Doctrine\ORM\QueryAdapter;
 use Pagerfanta\Pagerfanta;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\ValueResolver;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/movie')]
 class MovieController extends AbstractController
@@ -33,6 +36,7 @@ class MovieController extends AbstractController
         ]);
     }
 
+    #[IsGranted(MovieVoter::UNDERAGE, 'movie')]
     #[Route('/{id<\d+>}', name: 'app_movie_show', methods: ['GET'])]
     public function show(?Movie $movie): Response
     {
@@ -41,11 +45,12 @@ class MovieController extends AbstractController
         ]);
     }
 
+    #[IsGranted(MovieVoter::UNDERAGE, 'movie')]
     #[Route('/omdb/{title}', name: 'app_movie_omdb', methods: ['GET'])]
-    public function omdb(string $title, MovieProvider $provider): Response
+    public function omdb(#[ValueResolver('movie_title')] ?Movie $movie): Response
     {
         return $this->render('movie/show.html.twig', [
-            'movie' => $provider->getOne(SearchType::Title, $title),
+            'movie' => $movie,
         ]);
     }
 
@@ -53,12 +58,19 @@ class MovieController extends AbstractController
     #[Route('/{id<\d+>}/edit', name: 'app_movie_edit', methods: ['GET', 'POST'])]
     public function save(?Movie $movie, Request $request, EntityManagerInterface $manager): Response
     {
+        if ($movie instanceof Movie) {
+            $this->denyAccessUnlessGranted(MovieVoter::CREATOR, $movie);
+        }
+
         $movie ??= new Movie();
         $form = $this->createForm(MovieType::class, $movie);
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            if (!$movie->getId() && (($user = $this->getUser()) instanceof User)) {
+            if (!$movie->getId()
+                && (($user = $this->getUser()) instanceof User)
+                && $this->isGranted(MovieVoter::UNDERAGE, $movie)
+            ) {
                 $movie->setCreatedBy($user);
             }
             $manager->persist($movie);

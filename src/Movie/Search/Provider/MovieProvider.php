@@ -3,10 +3,13 @@
 namespace App\Movie\Search\Provider;
 
 use App\Entity\Movie;
+use App\Entity\User;
 use App\Movie\Search\Consumer\OmdbApiConsumer;
 use App\Movie\Search\Enum\SearchType;
 use App\Movie\Search\Transformer\OmdbMovieTransformer;
+use App\Security\MovieVoter;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -19,6 +22,7 @@ class MovieProvider
         protected readonly OmdbApiConsumer $consumer,
         protected readonly OmdbMovieTransformer $transformer,
         protected readonly GenreProvider $genreProvider,
+        protected readonly Security $security,
     )
     {
     }
@@ -43,6 +47,11 @@ class MovieProvider
         $movie = $this->transformer->transform($data);
         foreach ($this->genreProvider->getFromOmdbString($data['Genre']) as $genre) {
             $movie->addGenre($genre);
+        }
+
+        $user = $this->security->getUser();
+        if ($user instanceof User && $this->security->isGranted(MovieVoter::UNDERAGE)) {
+            $movie->setCreatedBy($user);
         }
 
         $this->manager->persist($movie);
