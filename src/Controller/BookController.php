@@ -48,16 +48,21 @@ class BookController extends AbstractController
         ]);
     }
 
+    #[IsGranted('IS_AUTHENTICATED')]
     #[Route('/new', name: 'app_book_new', methods: ['GET', 'POST'])]
     #[Route('/{id<\d+>}/edit', name: 'app_book_edit', methods: ['GET', 'POST'])]
     public function save(?Book $book, Request $request, EntityManagerInterface $manager): Response
     {
+        if ($book instanceof Book) {
+            $this->denyAccessUnlessGranted(BookVoter::IS_CREATOR, $book);
+        }
+
         $book ??= new Book();
         $form = $this->createForm(BookType::class, $book);
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            if (null == $book->getId()
+            if (null === $book->getId()
                 && ($user = $this->getUser()) instanceof User) {
                 $book->setCreatedBy($user);
             }

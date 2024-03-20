@@ -4,9 +4,9 @@ namespace App\Book;
 
 use App\Entity\Book;
 use App\Repository\BookRepository;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 
 class BookManager
 {
@@ -14,6 +14,7 @@ class BookManager
         protected readonly BookRepository $repository,
         #[Autowire('%items_per_page%')]
         protected readonly int $limit,
+        protected readonly Security $security,
     )
     {
     }
@@ -35,6 +36,9 @@ class BookManager
 
     public function doStuff():void
     {
-        // ..
+        // ...
+        if ($this->security->isGranted('ROLE_USER')) {
+            // ...
+        }
     }
 }
